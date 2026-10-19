@@ -127,3 +127,4 @@ fetch_historical_rates <- function(base = CONFIG$default_base,
   
   df
 }
+

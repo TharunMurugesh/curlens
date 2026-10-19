@@ -162,3 +162,4 @@ get_rates_store <- function(base = CONFIG$default_base,
     error = NULL
   )
 }
+

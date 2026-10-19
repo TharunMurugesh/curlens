@@ -46,7 +46,7 @@ export default function MethodologyPage() {
           <div className="card-badge">Time Series Modeling</div>
           <h3>3. Model Specifications</h3>
           <p>
-            To avoid spurious overfitting and maintain bounded runtime on Antigravity's free tier, CurLens restricts time-series modeling to exactly two parsimonious statistical models:
+            CurLens compares two statistical models with different assumptions about how exchange rates change over time:
           </p>
           <div className="model-grid">
             <div className="model-box">
@@ -116,3 +116,4 @@ export default function MethodologyPage() {
     </div>
   );
 }
+

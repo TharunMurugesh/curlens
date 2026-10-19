@@ -41,3 +41,4 @@ if (length(failed) > 0) {
 } else {
   message("All packages successfully verified!")
 }
+

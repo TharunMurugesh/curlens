@@ -1,6 +1,3 @@
-// CurLens - Centralized API Service Module
-// All backend communication goes through this module
-
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 async function request(endpoint, options = {}) {
@@ -17,7 +14,10 @@ async function request(endpoint, options = {}) {
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
-      const errorMsg = data?.error || `HTTP Error ${res.status}: ${res.statusText}`;
+      const isProxyFailure = res.status === 500 && !data && res.headers.get('content-type')?.includes('text/plain');
+      const errorMsg = data?.error || (isProxyFailure
+        ? 'The local API is not responding on port 8000. Start the R backend and retry.'
+        : `HTTP Error ${res.status}: ${res.statusText}`);
       const err = new Error(errorMsg);
       err.code = data?.code || 'HTTP_ERROR';
       err.status = res.status;
@@ -76,3 +76,4 @@ export const api = {
     return request(`/api/evaluation${query}`);
   },
 };
+

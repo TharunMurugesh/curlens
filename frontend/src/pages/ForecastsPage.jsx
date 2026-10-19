@@ -11,23 +11,22 @@ export default function ForecastsPage({
 }) {
   const latestObsRate = nowcast?.latest_observed_rate;
   const latestObsDate = nowcast?.latest_observation_date;
-  const horizonsList = forecast?.horizons || [];
-  const scorecardList = evaluation?.scorecard || [];
+  const horizonsList = Array.isArray(forecast?.horizons) ? forecast.horizons : [];
+  const scorecardList = Array.isArray(evaluation?.scorecard) ? evaluation.scorecard : [];
 
   return (
     <div className="forecasts-page">
       <div className="page-header">
         <h2 className="page-title">Rate Estimates & Historical Model Evaluation</h2>
         <p className="page-description">
-          Short-horizon forecasts for USD/INR reference rates evaluated against a random-walk baseline using chronological rolling-origin backtesting.
+          Short-horizon estimates for USD/INR reference rates, compared with a random-walk baseline through chronological backtesting.
         </p>
       </div>
 
-      {/* Mandatory Statistical Disclosure */}
       <div className="disclosure-banner">
         <div className="disclosure-icon">⚖️</div>
         <div className="disclosure-content">
-          <strong>Important Statistical Disclosure</strong>
+            <strong>About these estimates</strong>
           <p>
             {nowcast?.disclaimer ||
               'This is a statistical estimate of the next reference-rate observation, not a live market quote. Frankfurter publishes daily reference rates; this project does not use intraday prices.'}
@@ -35,7 +34,6 @@ export default function ForecastsPage({
         </div>
       </div>
 
-      {/* Nowcast Feature Card */}
       <div className="nowcast-feature-card">
         <div className="nowcast-header">
           <div>
@@ -50,15 +48,17 @@ export default function ForecastsPage({
         <div className="nowcast-body-grid">
           <div className="nowcast-stat">
             <span className="stat-caption">Latest Published Rate</span>
-            <span className="stat-big">₹{Number(latestObsRate).toFixed(4)}</span>
-            <span className="stat-sub">Observation Date: {latestObsDate}</span>
+            <span className="stat-big">{latestObsRate != null ? `₹${Number(latestObsRate).toFixed(4)}` : '—'}</span>
+            <span className="stat-sub">Observation Date: {latestObsDate || '—'}</span>
           </div>
 
           <div className="nowcast-stat estimate-stat">
             <span className="stat-caption">Model Estimate (Next Obs)</span>
-            <span className="stat-big estimate-val">₹{Number(nowcast?.arima_estimate).toFixed(4)}</span>
+            <span className="stat-big estimate-val">
+              {nowcast?.arima_estimate != null ? `₹${Number(nowcast.arima_estimate).toFixed(4)}` : '—'}
+            </span>
             <span className="stat-sub">
-              Baseline (Random Walk): ₹{Number(nowcast?.baseline_estimate).toFixed(4)}
+              Baseline (Random Walk): {nowcast?.baseline_estimate != null ? `₹${Number(nowcast.baseline_estimate).toFixed(4)}` : '—'}
             </span>
           </div>
 
@@ -67,27 +67,29 @@ export default function ForecastsPage({
             <div className="ci-row">
               <span className="ci-badge">80% CI</span>
               <span className="ci-values">
-                ₹{Number(nowcast?.arima_intervals?.lower_80).toFixed(2)} – ₹{Number(nowcast?.arima_intervals?.upper_80).toFixed(2)}
+                {nowcast?.arima_intervals?.lower_80 != null && nowcast?.arima_intervals?.upper_80 != null
+                  ? `₹${Number(nowcast.arima_intervals.lower_80).toFixed(2)} – ₹${Number(nowcast.arima_intervals.upper_80).toFixed(2)}`
+                  : '—'}
               </span>
             </div>
             <div className="ci-row">
               <span className="ci-badge">95% CI</span>
               <span className="ci-values">
-                ₹{Number(nowcast?.arima_intervals?.lower_95).toFixed(2)} – ₹{Number(nowcast?.arima_intervals?.upper_95).toFixed(2)}
+                {nowcast?.arima_intervals?.lower_95 != null && nowcast?.arima_intervals?.upper_95 != null
+                  ? `₹${Number(nowcast.arima_intervals.lower_95).toFixed(2)} – ₹${Number(nowcast.arima_intervals.upper_95).toFixed(2)}`
+                  : '—'}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Forecast Chart */}
       <ForecastChart
-        recentHistory={historyRates}
+        recentHistory={Array.isArray(historyRates) ? historyRates : []}
         forecastHorizons={horizonsList}
         height={380}
       />
 
-      {/* Horizons Table */}
       <div className="table-card">
         <div className="card-header-row">
           <div>
@@ -108,10 +110,10 @@ export default function ForecastsPage({
               </tr>
             </thead>
             <tbody>
-              {horizonsList.map((h) => {
-                const hNum = h.horizon_observations;
-                const rw = h.baseline;
-                const ar = h.arima;
+              {horizonsList.map((h, idx) => {
+                const hNum = h.horizon_observations || idx + 1;
+                const rw = h.baseline || {};
+                const ar = h.arima || {};
                 return (
                   <tr key={hNum}>
                     <td>
@@ -119,17 +121,21 @@ export default function ForecastsPage({
                       <div className="sub-label">Next {hNum === 1 ? 'business session' : `${hNum} business sessions`}</div>
                     </td>
                     <td className="rate-col">
-                      ₹{Number(rw?.prediction).toFixed(4)}
+                      {rw.prediction != null ? `₹${Number(rw.prediction).toFixed(4)}` : '—'}
                     </td>
                     <td className="rate-col" style={{ color: '#2563eb', fontWeight: 600 }}>
-                      ₹{Number(ar?.prediction).toFixed(4)}
-                      <div className="sub-label">{ar?.model_specification || 'ARIMA'}</div>
+                      {ar.prediction != null ? `₹${Number(ar.prediction).toFixed(4)}` : '—'}
+                      <div className="sub-label">{ar.model_specification || 'ARIMA'}</div>
                     </td>
                     <td>
-                      ₹{Number(ar?.lower_80).toFixed(2)} – ₹{Number(ar?.upper_80).toFixed(2)}
+                      {ar.lower_80 != null && ar.upper_80 != null
+                        ? `₹${Number(ar.lower_80).toFixed(2)} – ₹${Number(ar.upper_80).toFixed(2)}`
+                        : '—'}
                     </td>
                     <td>
-                      ₹{Number(ar?.lower_95).toFixed(2)} – ₹{Number(ar?.upper_95).toFixed(2)}
+                      {ar.lower_95 != null && ar.upper_95 != null
+                        ? `₹${Number(ar.lower_95).toFixed(2)} – ₹${Number(ar.upper_95).toFixed(2)}`
+                        : '—'}
                     </td>
                   </tr>
                 );
@@ -139,7 +145,6 @@ export default function ForecastsPage({
         </div>
       </div>
 
-      {/* Historical Evaluation Scorecard */}
       <div className="table-card evaluation-card">
         <div className="card-header-row">
           <div>
@@ -177,26 +182,29 @@ export default function ForecastsPage({
               </tr>
             </thead>
             <tbody>
-              {scorecardList.map((sc) => {
-                const h = sc.horizon_observations;
-                const rw = sc.random_walk;
-                const ar = sc.arima;
-                const edge = sc.arima_improvement_mae_pct;
-                const hasEdge = edge > 0;
+              {scorecardList.map((sc, idx) => {
+                const h = sc.horizon_observations || idx + 1;
+                const rw = sc.random_walk || {};
+                const ar = sc.arima || {};
+                const rawEdge = sc.arima_improvement_mae_pct;
+                const edgeNum = typeof rawEdge === 'number' ? rawEdge : (Array.isArray(rawEdge) ? Number(rawEdge[0]) : (rawEdge != null ? Number(rawEdge) : null));
+                const hasEdge = edgeNum != null && !isNaN(edgeNum) && edgeNum > 0;
                 return (
                   <tr key={h}>
                     <td><strong>+{h} {h === 1 ? 'observation' : 'observations'}</strong></td>
-                    <td>{sc.sample_size} origins</td>
-                    <td>₹{Number(rw.mae).toFixed(4)}</td>
-                    <td>₹{Number(rw.rmse).toFixed(4)}</td>
-                    <td style={{ fontWeight: 600 }}>₹{Number(ar.mae).toFixed(4)}</td>
-                    <td>₹{Number(ar.rmse).toFixed(4)}</td>
+                    <td>{sc.sample_size != null ? `${sc.sample_size} origins` : '—'}</td>
+                    <td>{rw.mae != null ? `₹${Number(rw.mae).toFixed(4)}` : '—'}</td>
+                    <td>{rw.rmse != null ? `₹${Number(rw.rmse).toFixed(4)}` : '—'}</td>
+                    <td style={{ fontWeight: 600 }}>{ar.mae != null ? `₹${Number(ar.mae).toFixed(4)}` : '—'}</td>
+                    <td>{ar.rmse != null ? `₹${Number(ar.rmse).toFixed(4)}` : '—'}</td>
                     <td>
-                      <span
-                        className={`edge-pill ${hasEdge ? 'positive' : 'negative'}`}
-                      >
-                        {hasEdge ? `+${edge.toFixed(2)}%` : `${edge.toFixed(2)}%`}
-                      </span>
+                      {edgeNum != null && !isNaN(edgeNum) ? (
+                        <span
+                          className={`edge-pill ${hasEdge ? 'positive' : 'negative'}`}
+                        >
+                          {hasEdge ? `+${edgeNum.toFixed(2)}%` : `${edgeNum.toFixed(2)}%`}
+                        </span>
+                      ) : '—'}
                     </td>
                   </tr>
                 );
@@ -214,3 +222,4 @@ export default function ForecastsPage({
     </div>
   );
 }
+

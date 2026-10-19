@@ -17,3 +17,4 @@ get_cache_path <- function(base = CONFIG$default_base, quote = CONFIG$default_qu
   filename <- paste0(tolower(base), "_", tolower(quote), ".csv")
   file.path(CONFIG$cache_dir, filename)
 }
+

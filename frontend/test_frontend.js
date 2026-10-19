@@ -1,4 +1,3 @@
-// CurLens - Frontend Logic & Arithmetic Verification Tests
 
 function assert(condition, message) {
   if (!condition) {
@@ -9,8 +8,6 @@ function assert(condition, message) {
 }
 
 console.log('=== CurLens Frontend Unit & Logic Verification ===\n');
-
-// 1. Conversion Arithmetic
 function convert(amount, rate) {
   const num = parseFloat(amount);
   if (isNaN(num) || num < 0) return null;
@@ -22,8 +19,6 @@ assert(convert(1000, 1 / 94.86) === 10.54, 'INR 1000 to USD at 94.86 = 10.54');
 assert(convert(0, 94.86) === 0, 'Zero conversion = 0');
 assert(convert(-50, 94.86) === null, 'Negative amount rejected');
 assert(convert('abc', 94.86) === null, 'Non-numeric string rejected');
-
-// 2. Range Filter Logic
 const sampleRates = [
   { date: '2025-10-19', rate: 88.0 },
   { date: '2026-04-19', rate: 91.0 },
@@ -45,8 +40,6 @@ function filterByDays(rates, days) {
 assert(filterByDays(sampleRates, null).length === 6, 'MAX range returns all observations');
 assert(filterByDays(sampleRates, 30).length === 3, '1M range filters to last 30 days (Sept 19 to Oct 19)');
 assert(filterByDays(sampleRates, 180).length === 4, '6M range filters to last 180 days (Jul, Sep, Oct)');
-
-// 3. Y-Axis domain calculation
 function computeDomain(data) {
   const vals = data.map((d) => d.rate);
   const min = Math.min(...vals);
@@ -61,8 +54,6 @@ function computeDomain(data) {
 const domain = computeDomain(sampleRates);
 assert(domain.minY <= 88.0, 'Domain minY encapsulates minimum rate');
 assert(domain.maxY >= 94.86, 'Domain maxY encapsulates maximum rate');
-
-// 4. Direction Interpretation
 function getMovementDescription(change) {
   if (change > 0) return 'Rupee weakened';
   if (change < 0) return 'Rupee strengthened';

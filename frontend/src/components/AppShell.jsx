@@ -19,6 +19,15 @@ export default function AppShell({
   children,
 }) {
   const isStale = dataStatus === 'stale';
+  const isUnavailable = dataStatus === 'unavailable';
+  const statusLabel = {
+    loading: 'Connecting to rates service',
+    unavailable: 'Rates service unavailable',
+    stale: 'Cached rates (stale)',
+    cache: 'Reference rates available',
+    fresh: 'Reference rates available',
+    live: 'Reference rates available',
+  }[dataStatus] || 'Rates status unknown';
 
   return (
     <div className="app-shell">
@@ -37,11 +46,11 @@ export default function AppShell({
               <span
                 className="status-dot"
                 style={{
-                  backgroundColor: isStale ? '#f59e0b' : '#10b981',
+                  backgroundColor: isUnavailable ? '#dc2626' : isStale ? '#f59e0b' : dataStatus === 'loading' ? '#94a3b8' : '#10b981',
                 }}
               />
               <span className="status-text">
-                {isStale ? 'Cached (Stale)' : 'Reference Rates Active'}
+                {statusLabel}
               </span>
               {lastObsDate && <span className="obs-date">Obs: {lastObsDate}</span>}
             </div>
@@ -64,6 +73,7 @@ export default function AppShell({
                 key={tab.id}
                 className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
                 onClick={() => onTabChange(tab.id)}
+                aria-current={activeTab === tab.id ? 'page' : undefined}
               >
                 {tab.label}
               </button>
@@ -92,3 +102,4 @@ export default function AppShell({
     </div>
   );
 }
+

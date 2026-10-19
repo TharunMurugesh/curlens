@@ -38,7 +38,7 @@ function(req, res) {
 
 #* Health check endpoint
 #* @get /api/health
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(res) {
   cache_file <- CONFIG$cache_file
   cache_exists <- file.exists(cache_file)
@@ -71,7 +71,7 @@ function(res) {
 
 #* Supported currencies (curated subset verified against Frankfurter)
 #* @get /api/currencies
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(res) {
   now <- Sys.time()
   if (is.null(CACHED_CURRENCIES) || is.null(CACHED_CURRENCIES_TIME) || 
@@ -129,7 +129,7 @@ function(res) {
 #* @param base Base currency (default: USD)
 #* @param quote Quote currency (default: INR)
 #* @param refresh Force network refresh (default: false)
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(base = "USD", quote = "INR", refresh = FALSE, res) {
   base <- toupper(trimws(base))
   quote <- toupper(trimws(quote))
@@ -214,7 +214,7 @@ function(base = "USD", quote = "INR", refresh = FALSE, res) {
 #* @param quote Quote currency (default: INR)
 #* @param from Start date YYYY-MM-DD
 #* @param to End date YYYY-MM-DD
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(base = "USD", quote = "INR", from = NULL, to = NULL, res) {
   base <- toupper(trimws(base))
   quote <- toupper(trimws(quote))
@@ -296,7 +296,7 @@ function(base = "USD", quote = "INR", from = NULL, to = NULL, res) {
 #* @param amount Amount to convert
 #* @param from Source currency code
 #* @param to Target currency code
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(amount = 100, from = "USD", to = "INR", res) {
   from <- toupper(trimws(from))
   to <- toupper(trimws(to))
@@ -374,7 +374,7 @@ function(amount = 100, from = "USD", to = "INR", res) {
 #* Analytics and summary metrics
 #* @get /api/analytics
 #* @param window Rolling volatility window (default: 30)
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(window = 30, res) {
   win <- suppressWarnings(as.integer(window))
   if (is.na(win) || win < 2 || win > 365) {
@@ -396,7 +396,7 @@ function(window = 30, res) {
 
 #* Nowcast: one-step-ahead estimate of the next unpublished reference rate
 #* @get /api/nowcast
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(res) {
   store_res <- tryCatch(get_rates_store("USD", "INR"), error = function(e) NULL)
   if (is.null(store_res) || is.null(store_res$data) || nrow(store_res$data) == 0) {
@@ -411,7 +411,7 @@ function(res) {
 #* Multi-horizon forecasts (1, 3, 5 observations)
 #* @get /api/forecast
 #* @param horizons Comma-separated list of integer observation horizons (e.g. 1,3,5)
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(horizons = "1,3,5", res) {
   h_vec <- validate_horizons(horizons)
   if (length(h_vec) == 0) {
@@ -431,7 +431,7 @@ function(horizons = "1,3,5", res) {
 #* Rolling-origin model evaluation scorecard
 #* @get /api/evaluation
 #* @param refresh Force recalculation of evaluation (default: false)
-#* @serializer json
+#* @serializer json list(auto_unbox=TRUE)
 function(refresh = FALSE, res) {
   do_refresh <- isTRUE(as.logical(refresh))
   store_res <- tryCatch(get_rates_store("USD", "INR"), error = function(e) NULL)
@@ -458,3 +458,4 @@ function(refresh = FALSE, res) {
   eval_data$data_status <- store_res$status
   eval_data
 }
+

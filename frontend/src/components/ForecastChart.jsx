@@ -12,12 +12,13 @@ import {
 } from 'recharts';
 
 export default function ForecastChart({ recentHistory = [], forecastHorizons = [], height = 360 }) {
-  // Combine recent history with forecast data points
   const chartData = useMemo(() => {
     const data = [];
 
-    // Take last 15 observed points
-    const historySlice = recentHistory.slice(-15);
+    const safeHistory = Array.isArray(recentHistory)
+      ? recentHistory.filter((item) => item?.rate != null && Number.isFinite(Number(item.rate)))
+      : [];
+    const historySlice = safeHistory.slice(-15);
     historySlice.forEach((item) => {
       data.push({
         label: item.date,
@@ -32,14 +33,15 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
       });
     });
 
-    if (historySlice.length === 0 || !forecastHorizons || forecastHorizons.length === 0) {
+    const horizons = Array.isArray(forecastHorizons)
+      ? forecastHorizons.filter((item) => item && typeof item === 'object')
+      : [];
+    if (historySlice.length === 0 || horizons.length === 0) {
       return data;
     }
 
-    const lastObsRate = historySlice[historySlice.length - 1].rate;
-    const lastObsDate = historySlice[historySlice.length - 1].date;
+    const lastObsRate = Number(historySlice[historySlice.length - 1].rate);
 
-    // Bridge point at the last observation
     const lastItem = data[data.length - 1];
     if (lastItem) {
       lastItem.baseline = lastObsRate;
@@ -50,19 +52,25 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
       lastItem.upper_95 = lastObsRate;
     }
 
-    // Add forecast steps
-    forecastHorizons.forEach((h) => {
-      const hNum = h.horizon_observations;
+    horizons.forEach((h, idx) => {
+      const hNum = h.horizon_observations || idx + 1;
+      const basePred = h.baseline?.prediction != null ? Number(h.baseline.prediction) : null;
+      const arimaPred = h.arima?.prediction != null ? Number(h.arima.prediction) : null;
+      const l80 = h.arima?.lower_80 != null ? Number(h.arima.lower_80) : null;
+      const u80 = h.arima?.upper_80 != null ? Number(h.arima.upper_80) : null;
+      const l95 = h.arima?.lower_95 != null ? Number(h.arima.lower_95) : null;
+      const u95 = h.arima?.upper_95 != null ? Number(h.arima.upper_95) : null;
+
       data.push({
         label: `+${hNum} obs`,
         isForecast: true,
         actual: null,
-        baseline: h.baseline ? Number(h.baseline.prediction) : null,
-        arima: h.arima ? Number(h.arima.prediction) : null,
-        lower_80: h.arima ? Number(h.arima.lower_80) : null,
-        upper_80: h.arima ? Number(h.arima.upper_80) : null,
-        lower_95: h.arima ? Number(h.arima.lower_95) : null,
-        upper_95: h.arima ? Number(h.arima.upper_95) : null,
+        baseline: basePred,
+        arima: arimaPred,
+        lower_80: l80,
+        upper_80: u80,
+        lower_95: l95,
+        upper_95: u95,
       });
     });
 
@@ -73,11 +81,9 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
     if (!chartData || chartData.length === 0) return { minY: 0, maxY: 100 };
     const allValues = [];
     chartData.forEach((d) => {
-      if (d.actual) allValues.push(d.actual);
-      if (d.baseline) allValues.push(d.baseline);
-      if (d.arima) allValues.push(d.arima);
-      if (d.lower_95) allValues.push(d.lower_95);
-      if (d.upper_95) allValues.push(d.upper_95);
+      ['actual', 'baseline', 'arima', 'lower_95', 'upper_95'].forEach((key) => {
+        if (typeof d[key] === 'number' && Number.isFinite(d[key])) allValues.push(d[key]);
+      });
     });
     if (allValues.length === 0) return { minY: 80, maxY: 100 };
     const min = Math.min(...allValues);
@@ -88,6 +94,14 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
       maxY: Math.ceil((max + pad) * 10) / 10,
     };
   }, [chartData]);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="chart-card empty-chart" style={{ minHeight: height }}>
+        <p>Forecast chart data is not available yet.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="chart-card">
@@ -126,13 +140,15 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
                     <div className="tooltip-date">
                       {d.isForecast ? `Forecast Horizon (${d.label})` : `Observed: ${d.label}`}
                     </div>
-                    {d.actual && <div className="tooltip-actual">Observed: ₹{d.actual.toFixed(4)}</div>}
-                    {d.arima && <div className="tooltip-arima">ARIMA Estimate: ₹{d.arima.toFixed(4)}</div>}
-                    {d.baseline && <div className="tooltip-baseline">Random Walk: ₹{d.baseline.toFixed(4)}</div>}
-                    {d.lower_80 && (
+                    {typeof d.actual === 'number' && !isNaN(d.actual) && <div className="tooltip-actual">Observed: ₹{d.actual.toFixed(4)}</div>}
+                    {typeof d.arima === 'number' && !isNaN(d.arima) && <div className="tooltip-arima">ARIMA Estimate: ₹{d.arima.toFixed(4)}</div>}
+                    {typeof d.baseline === 'number' && !isNaN(d.baseline) && <div className="tooltip-baseline">Random Walk: ₹{d.baseline.toFixed(4)}</div>}
+                    {typeof d.lower_80 === 'number' && typeof d.upper_80 === 'number' && (
                       <div className="tooltip-intervals">
                         <div>80% CI: [₹{d.lower_80.toFixed(2)}, ₹{d.upper_80.toFixed(2)}]</div>
-                        <div>95% CI: [₹{d.lower_95.toFixed(2)}, ₹{d.upper_95.toFixed(2)}]</div>
+                        {typeof d.lower_95 === 'number' && typeof d.upper_95 === 'number' && (
+                          <div>95% CI: [₹{d.lower_95.toFixed(2)}, ₹{d.upper_95.toFixed(2)}]</div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -155,7 +171,6 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
               }}
             />
 
-            {/* Prediction intervals shaded as stacked areas */}
             <Area
               type="monotone"
               dataKey="upper_95"
@@ -173,7 +188,6 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
               connectNulls
             />
 
-            {/* Observed rate line */}
             <Line
               type="monotone"
               dataKey="actual"
@@ -183,7 +197,6 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
               connectNulls
             />
 
-            {/* Random Walk line */}
             <Line
               type="monotone"
               dataKey="baseline"
@@ -194,7 +207,6 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
               connectNulls
             />
 
-            {/* ARIMA line */}
             <Line
               type="monotone"
               dataKey="arima"
@@ -213,3 +225,4 @@ export default function ForecastChart({ recentHistory = [], forecastHorizons = [
     </div>
   );
 }
+

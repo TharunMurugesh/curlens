@@ -84,3 +84,4 @@ export default function StatusNotice({ type = 'info', message, details, onRetry,
     </div>
   );
 }
+

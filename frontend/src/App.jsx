@@ -8,6 +8,39 @@ import MethodologyPage from './pages/MethodologyPage';
 import StatusNotice from './components/StatusNotice';
 import { api } from './services/api';
 
+class TabErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Section render error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="section-error" role="alert">
+          <h3>Unable to display this section</h3>
+          <p>Something went wrong while displaying this view. Try again or refresh the page.</p>
+          <button
+            className="refresh-btn"
+            onClick={() => this.props.onRetry()}
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
@@ -15,7 +48,6 @@ export default function App() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [error, setError] = useState(null);
 
-  // App data states
   const [currencies, setCurrencies] = useState([]);
   const [latestRate, setLatestRate] = useState(null);
   const [historyRates, setHistoryRates] = useState([]);
@@ -23,9 +55,9 @@ export default function App() {
   const [nowcast, setNowcast] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
-  const [dataStatus, setDataStatus] = useState('fresh');
+  const [dataStatus, setDataStatus] = useState('loading');
+  const [sectionAttempt, setSectionAttempt] = useState(0);
 
-  // Load primary data
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
       setIsRefreshing(true);
@@ -35,7 +67,6 @@ export default function App() {
     setError(null);
 
     try {
-      // 1. Core data fetch in parallel
       const [currRes, latestRes, histRes, analyticsRes, nowcastRes, fcRes, evalRes] = await Promise.allSettled([
         api.getCurrencies(),
         api.getLatestRate('USD', 'INR', isRefresh),
@@ -47,18 +78,18 @@ export default function App() {
       ]);
 
       if (currRes.status === 'fulfilled' && currRes.value?.currencies) {
-        setCurrencies(currRes.value.currencies);
+        setCurrencies(Array.isArray(currRes.value.currencies) ? currRes.value.currencies : []);
       }
 
       if (latestRes.status === 'fulfilled' && latestRes.value) {
         setLatestRate(latestRes.value);
-        if (latestRes.value.data_status) {
-          setDataStatus(latestRes.value.data_status);
-        }
+        setDataStatus(latestRes.value.data_status || 'fresh');
+      } else {
+        setDataStatus('unavailable');
       }
 
       if (histRes.status === 'fulfilled' && histRes.value?.rates) {
-        setHistoryRates(histRes.value.rates);
+        setHistoryRates(Array.isArray(histRes.value.rates) ? histRes.value.rates : []);
       }
 
       if (analyticsRes.status === 'fulfilled' && analyticsRes.value) {
@@ -77,11 +108,11 @@ export default function App() {
         setEvaluation(evalRes.value);
       }
 
-      // Check for critical failures
       if (latestRes.status === 'rejected' && histRes.status === 'rejected') {
         throw new Error(latestRes.reason?.message || 'Failed to connect to CurLens API service');
       }
     } catch (err) {
+      setDataStatus('unavailable');
       setError(err.message || 'Error loading currency analytics data');
     } finally {
       setLoading(false);
@@ -119,7 +150,7 @@ export default function App() {
       onRefresh={handleRefresh}
       isRefreshing={isRefreshing}
     >
-      {loading && (
+      {loading && !latestRate && historyRates.length === 0 && (
         <div className="page-loading-state">
           <div className="spinner" />
           <p>Connecting to CurLens API and loading reference rate data...</p>
@@ -135,8 +166,8 @@ export default function App() {
         />
       )}
 
-      {!loading && (
-        <>
+      {(!loading || latestRate || historyRates.length > 0) && (
+        <TabErrorBoundary key={`${activeTab}-${sectionAttempt}`} onRetry={() => setSectionAttempt((attempt) => attempt + 1)}>
           {activeTab === 'dashboard' && (
             <Dashboard
               latestRate={latestRate}
@@ -145,7 +176,6 @@ export default function App() {
               historyRates={historyRates}
               currencies={currencies}
               dataStatus={dataStatus}
-              error={error}
               onNavigate={setActiveTab}
               onRetry={handleRefresh}
             />
@@ -176,8 +206,9 @@ export default function App() {
           {activeTab === 'methodology' && (
             <MethodologyPage />
           )}
-        </>
+        </TabErrorBoundary>
       )}
     </AppShell>
   );
 }
+

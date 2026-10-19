@@ -1,5 +1,3 @@
-/* CurLens - Unified Design System & Responsive Styles */
-
 :root {
   --bg-primary: #f8fafc;
   --bg-surface: #ffffff;
@@ -39,7 +37,6 @@ body {
   overflow-x: hidden;
 }
 
-/* App Shell */
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -157,7 +154,6 @@ body {
   padding: 0.25rem 0.5rem;
 }
 
-/* Nav Bar */
 .nav-bar {
   border-top: 1px solid var(--border-color);
   background-color: var(--bg-surface);
@@ -194,7 +190,6 @@ body {
   border-bottom-color: var(--accent-blue);
 }
 
-/* Main Content */
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
@@ -203,7 +198,6 @@ body {
   flex: 1;
 }
 
-/* Page Headers */
 .page-header {
   margin-bottom: 1.5rem;
 }
@@ -229,7 +223,6 @@ body {
   gap: 1rem;
 }
 
-/* Metrics Grid */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -317,7 +310,6 @@ body {
   margin-top: 0.25rem;
 }
 
-/* Dashboard Content Grid */
 .dashboard-content-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -337,7 +329,6 @@ body {
   gap: 1.25rem;
 }
 
-/* Charts */
 .chart-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -463,7 +454,6 @@ body {
   line-height: 1.4;
 }
 
-/* Converter */
 .converter-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -635,7 +625,6 @@ body {
   margin-top: 0.5rem;
 }
 
-/* Forecast Preview Card */
 .forecast-preview-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -695,7 +684,6 @@ body {
   color: var(--text-primary);
 }
 
-/* Tables */
 .table-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -800,7 +788,6 @@ body {
   line-height: 1.4;
 }
 
-/* Nowcast Feature Card */
 .nowcast-feature-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -899,7 +886,6 @@ body {
   font-weight: 600;
 }
 
-/* Disclosure Banner */
 .disclosure-banner {
   background-color: #f1f5f9;
   border: 1px solid #cbd5e1;
@@ -924,7 +910,6 @@ body {
   color: var(--text-primary);
 }
 
-/* History Page Stats Grid */
 .summary-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -986,7 +971,6 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-/* Methodology Page */
 .methodology-cards {
   display: flex;
   flex-direction: column;
@@ -1077,7 +1061,6 @@ body {
   color: var(--accent-blue);
 }
 
-/* Loading State */
 .page-loading-state {
   display: flex;
   flex-direction: column;
@@ -1086,6 +1069,34 @@ body {
   padding: 4rem 1rem;
   color: var(--text-muted);
   gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.section-error {
+  margin: 1rem 0;
+  padding: 2rem 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  text-align: center;
+}
+
+.section-error h3 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.section-error p {
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.empty-chart {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
   font-size: 0.875rem;
 }
 
@@ -1102,7 +1113,6 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* Footer */
 .footer {
   background-color: var(--bg-surface);
   border-top: 1px solid var(--border-color);
@@ -1135,7 +1145,6 @@ body {
   font-size: 0.6875rem;
 }
 
-/* Responsive Breakpoints: 1280px, 768px, 360px */
 @media (max-width: 768px) {
   .header-container {
     padding: 0.75rem 1rem;
@@ -1190,3 +1199,4 @@ body {
     font-size: 1.375rem;
   }
 }
+

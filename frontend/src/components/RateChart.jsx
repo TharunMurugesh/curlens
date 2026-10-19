@@ -19,36 +19,37 @@ const RANGES = [
 
 export default function RateChart({ rates = [], title = 'USD/INR Historical Rate', showRangeSelector = true, height = 340 }) {
   const [selectedRange, setSelectedRange] = useState('1Y');
+  const safeRates = Array.isArray(rates) ? rates : [];
 
-  // Filter rates by selected range
   const filteredData = useMemo(() => {
-    if (!rates || rates.length === 0) return [];
+    if (safeRates.length === 0) return [];
 
     const rangeConfig = RANGES.find((r) => r.label === selectedRange);
     if (!rangeConfig || rangeConfig.days === null) {
-      // For MAX, return downsampled data if over 600 points for smooth rendering
-      if (rates.length > 600) {
-        const step = Math.ceil(rates.length / 500);
-        return rates.filter((_, idx) => idx % step === 0 || idx === rates.length - 1);
+      if (safeRates.length > 600) {
+        const step = Math.ceil(safeRates.length / 500);
+        return safeRates.filter((_, idx) => idx % step === 0 || idx === safeRates.length - 1);
       }
-      return rates;
+      return safeRates;
     }
 
-    const lastObs = rates[rates.length - 1];
-    if (!lastObs?.date) return rates;
+    const lastObs = safeRates[safeRates.length - 1];
+    if (!lastObs?.date) return safeRates;
 
     const endDate = new Date(lastObs.date);
     const startDate = new Date(endDate);
     startDate.setDate(endDate.getDate() - rangeConfig.days);
 
     const startStr = startDate.toISOString().split('T')[0];
-    return rates.filter((item) => item.date >= startStr);
-  }, [rates, selectedRange]);
+    return safeRates.filter((item) => item?.date >= startStr);
+  }, [safeRates, selectedRange]);
 
-  // Compute min/max for tight Y-axis domain
   const { minY, maxY } = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return { minY: 0, maxY: 100 };
-    const values = filteredData.map((d) => d.rate).filter(Boolean);
+    const values = filteredData
+      .map((d) => Number(d?.rate))
+      .filter((value) => Number.isFinite(value));
+    if (values.length === 0) return { minY: 0, maxY: 100 };
     const min = Math.min(...values);
     const max = Math.max(...values);
     const padding = (max - min) * 0.08 || 1;
@@ -58,7 +59,7 @@ export default function RateChart({ rates = [], title = 'USD/INR Historical Rate
     };
   }, [filteredData]);
 
-  if (!rates || rates.length === 0) {
+  if (filteredData.length === 0) {
     return (
       <div className="chart-card empty-chart" style={{ height }}>
         <p>No historical rate data available.</p>
@@ -125,8 +126,7 @@ export default function RateChart({ rates = [], title = 'USD/INR Historical Rate
                 return (
                   <div className="chart-tooltip">
                     <div className="tooltip-date">{d.date}</div>
-                    <div className="tooltip-rate">₹{Number(d.rate).toFixed(4)}</div>
-                    {d.abs_change !== undefined && (
+                    {typeof d.abs_change === 'number' && (
                       <div
                         className="tooltip-change"
                         style={{
@@ -134,10 +134,10 @@ export default function RateChart({ rates = [], title = 'USD/INR Historical Rate
                         }}
                       >
                         {d.abs_change > 0 ? '▲ +' : d.abs_change < 0 ? '▼ ' : '• '}
-                        {d.abs_change.toFixed(4)} ({d.pct_change > 0 ? '+' : ''}{Number(d.pct_change).toFixed(2)}%)
+                        {d.abs_change.toFixed(4)} {typeof d.pct_change === 'number' ? `(${d.pct_change > 0 ? '+' : ''}${d.pct_change.toFixed(2)}%)` : ''}
                       </div>
                     )}
-                    {d.annualized_volatility && (
+                    {d.annualized_volatility != null && (
                       <div className="tooltip-vol">Vol (30d): {d.annualized_volatility}%</div>
                     )}
                   </div>
@@ -158,3 +158,4 @@ export default function RateChart({ rates = [], title = 'USD/INR Historical Rate
     </div>
   );
 }
+

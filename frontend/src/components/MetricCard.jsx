@@ -6,7 +6,7 @@ export default function MetricCard({
   subtitle,
   change,
   pctChange,
-  isRateMovement = false, // if true, positive change means INR weakness (upward USD/INR)
+  isRateMovement = false,
   badge,
   annotation,
 }) {
@@ -15,9 +15,6 @@ export default function MetricCard({
   const isNegative = hasChange && change < 0;
   const isZero = hasChange && change === 0;
 
-  // For USD/INR:
-  // Rate increase = INR weakening (loss of purchasing power against USD)
-  // Rate decrease = INR strengthening
   const changeColor = isPositive ? 'var(--color-warning)' : isNegative ? 'var(--color-success)' : 'var(--text-muted)';
 
   return (
@@ -51,3 +48,4 @@ export default function MetricCard({
     </div>
   );
 }
+

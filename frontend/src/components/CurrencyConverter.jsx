@@ -11,7 +11,6 @@ export default function CurrencyConverter({ currencies = [], defaultFrom = 'USD'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Trigger conversion
   const handleConvert = async (amtVal, f, t) => {
     const num = parseFloat(amtVal);
     if (isNaN(num) || num < 0) {
@@ -34,7 +33,6 @@ export default function CurrencyConverter({ currencies = [], defaultFrom = 'USD'
     }
   };
 
-  // Convert on amount, fromCurr, or toCurr change (debounced for input)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (amount.trim() !== '') {
@@ -50,7 +48,6 @@ export default function CurrencyConverter({ currencies = [], defaultFrom = 'USD'
     setToCurr(temp);
   };
 
-  // Default currency options if not loaded
   const currencyList = currencies && currencies.length > 0 ? currencies : [
     { iso_code: 'USD', name: 'US Dollar', symbol: '$' },
     { iso_code: 'INR', name: 'Indian Rupee', symbol: '₹' },
@@ -174,3 +171,4 @@ export default function CurrencyConverter({ currencies = [], defaultFrom = 'USD'
     </div>
   );
 }
+

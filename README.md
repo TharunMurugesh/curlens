@@ -192,3 +192,4 @@ npm run build
 - [x] Real MAE and RMSE metrics reported honest without fabrication.
 - [x] Responsive layout verified at 360px, 768px, and 1280px without horizontal overflow.
 - [x] Complete developer setup and execution commands documented.
+

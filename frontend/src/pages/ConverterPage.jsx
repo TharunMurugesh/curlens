@@ -25,7 +25,6 @@ export default function ConverterPage({ currencies }) {
           const res = await api.getLatestRate(pair.from, pair.to);
           results.push({ ...pair, rate: res.rate, date: res.date });
         } catch (e) {
-          // ignore or fallback
         }
       }
       if (isMounted) {
@@ -97,3 +96,4 @@ export default function ConverterPage({ currencies }) {
     </div>
   );
 }
+

@@ -66,3 +66,4 @@ validate_horizons <- function(horizons_str) {
   nums <- nums[!is.na(nums) & nums > 0]
   if (length(nums) == 0) c(1L, 3L, 5L) else sort(unique(nums))
 }
+

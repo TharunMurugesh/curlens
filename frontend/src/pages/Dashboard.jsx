@@ -11,7 +11,6 @@ export default function Dashboard({
   historyRates,
   currencies,
   dataStatus,
-  error,
   onNavigate,
   onRetry,
 }) {
@@ -28,16 +27,6 @@ export default function Dashboard({
         />
       )}
 
-      {error && (
-        <StatusNotice
-          type="error"
-          message="Failed to load some dashboard data"
-          details={error}
-          onRetry={onRetry}
-        />
-      )}
-
-      {/* Primary KPI Metrics */}
       <div className="metrics-grid">
         <MetricCard
           title="Latest USD/INR Rate"
@@ -91,11 +80,10 @@ export default function Dashboard({
               ? `${analytics.start_date} to ${analytics.end_date}`
               : 'Loading series...'
           }
-          badge="Genuine API Data"
+          badge="ECB Reference Data"
         />
       </div>
 
-      {/* Main Section: Chart + Quick Converter */}
       <div className="dashboard-content-grid">
         <div className="dashboard-chart-col">
           <RateChart rates={historyRates} title="USD/INR Exchange Rate History" height={360} />
@@ -104,7 +92,6 @@ export default function Dashboard({
         <div className="dashboard-side-col">
           <CurrencyConverter currencies={currencies} defaultFrom="USD" defaultTo="INR" />
 
-          {/* Quick Model Summary Link */}
           <div className="forecast-preview-card">
             <div className="preview-header">
               <h4>Short-Horizon Forecast</h4>
@@ -129,3 +116,4 @@ export default function Dashboard({
     </div>
   );
 }
+

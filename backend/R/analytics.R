@@ -107,3 +107,4 @@ calculate_directional_accuracy <- function(actual, predicted, baseline_actual) {
   # Count matches where direction is non-zero
   mean(actual_dir == pred_dir) * 100
 }
+
