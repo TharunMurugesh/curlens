@@ -1,4 +1,3 @@
-# CurLens - Comprehensive Backend Smoke Test
 
 suppressPackageStartupMessages({
   library(httr2)
@@ -35,14 +34,12 @@ get_json <- function(path, expect_status = 200) {
 
 cat("=== CurLens Backend API Smoke Test ===\n\n")
 
-# 1. Health
 cat("-- Testing /api/health --\n")
 h <- get_json("/api/health")
 assert_true(h$status == "ok", "/api/health reports status 'ok'")
 assert_true(h$cache$available == TRUE, "/api/health reports cache available")
 assert_true(as.integer(h$cache$row_count) > 0, sprintf("/api/health row_count > 0 (%s)", h$cache$row_count))
 
-# 2. Currencies
 cat("\n-- Testing /api/currencies --\n")
 curr <- get_json("/api/currencies")
 assert_true(nrow(curr$currencies) > 0, "/api/currencies returns currency list")
@@ -50,22 +47,18 @@ iso_codes <- curr$currencies$iso_code
 assert_true("USD" %in% iso_codes, "Currencies includes USD")
 assert_true("INR" %in% iso_codes, "Currencies includes INR")
 
-# 3. Latest Rate
 cat("\n-- Testing /api/rates/latest --\n")
 lat <- get_json("/api/rates/latest?base=USD&quote=INR")
 assert_true(lat$base == "USD" && lat$quote == "INR", "Latest rate has correct base/quote")
 assert_true(is.numeric(lat$rate) && lat$rate > 0, sprintf("Latest rate is positive numeric (%.4f)", lat$rate))
 assert_true(!is.null(lat$date), sprintf("Latest rate date is present (%s)", lat$date))
 
-# Identity rate
 lat_id <- get_json("/api/rates/latest?base=USD&quote=USD")
 assert_true(lat_id$rate == 1.0, "Identity rate USD/USD is 1.0")
 
-# Invalid currency
 lat_err <- get_json("/api/rates/latest?base=INVALID&quote=INR", expect_status = 400)
 assert_true(!is.null(lat_err$error) && lat_err$code == "INVALID_PARAMETER", "Invalid currency returned 400 with code INVALID_PARAMETER")
 
-# 4. History
 cat("\n-- Testing /api/rates/history --\n")
 hist <- get_json("/api/rates/history?base=USD&quote=INR&from=2026-01-01&to=2026-06-01")
 assert_true(as.integer(hist$observation_count) > 0, sprintf("History returned %s observations", hist$observation_count))
@@ -73,37 +66,30 @@ rates_df <- as.data.frame(hist$rates)
 assert_true("rate" %in% names(rates_df), "History rates contain 'rate'")
 assert_true("abs_change" %in% names(rates_df), "History rates contain 'abs_change'")
 
-# Invalid date in history
 hist_err <- get_json("/api/rates/history?base=USD&quote=INR&from=invalid-date", expect_status = 400)
 assert_true(hist_err$code == "INVALID_PARAMETER", "Invalid date format returned 400")
 
-# 5. Conversion
 cat("\n-- Testing /api/convert --\n")
 conv <- get_json("/api/convert?amount=100&from=USD&to=INR")
 assert_true(conv$amount == 100, "Conversion amount is 100")
 assert_true(conv$converted_amount > 0, sprintf("Converted amount is positive (%.2f)", conv$converted_amount))
 assert_true(abs(conv$converted_amount - (100 * conv$rate)) < 0.1, "Conversion arithmetic is correct")
 
-# Reverse conversion INR to USD
 conv_rev <- get_json("/api/convert?amount=1000&from=INR&to=USD")
 assert_true(conv_rev$converted_amount > 0, sprintf("Reverse conversion INR->USD positive (%.2f)", conv_rev$converted_amount))
 
-# Identity conversion
 conv_same <- get_json("/api/convert?amount=50&from=USD&to=USD")
 assert_true(conv_same$converted_amount == 50, "Identity conversion returns exact amount")
 
-# Invalid amount
 conv_err <- get_json("/api/convert?amount=-50&from=USD&to=INR", expect_status = 400)
 assert_true(conv_err$code == "INVALID_PARAMETER", "Negative conversion amount returned 400")
 
-# 6. Analytics
 cat("\n-- Testing /api/analytics --\n")
 an <- get_json("/api/analytics?window=30")
 assert_true(an$pair == "USD/INR", "Analytics pair is USD/INR")
 assert_true(!is.null(an$latest_rolling_volatility), "Rolling volatility is computed")
 assert_true(is.numeric(an$period_mean) && an$period_mean > 0, sprintf("Period mean is positive (%.4f)", an$period_mean))
 
-# 7. Nowcast
 cat("\n-- Testing /api/nowcast --\n")
 nc <- get_json("/api/nowcast")
 assert_true(nc$target_pair == "USD/INR", "Nowcast targets USD/INR")
@@ -113,7 +99,6 @@ assert_true(is.numeric(nc$baseline_estimate) && nc$baseline_estimate > 0, sprint
 assert_true(!is.null(nc$arima_intervals$lower_80), "Nowcast contains 80% intervals")
 assert_true(!is.null(nc$disclaimer), "Nowcast contains disclaimer")
 
-# 8. Forecast
 cat("\n-- Testing /api/forecast --\n")
 fc <- get_json("/api/forecast?horizons=1,3,5")
 horizons_df <- as.data.frame(fc$horizons)
@@ -123,7 +108,6 @@ assert_true(horizons_df$baseline$prediction[1] > 0, "Baseline prediction is posi
 assert_true(horizons_df$arima$prediction[1] > 0, "ARIMA prediction is positive")
 assert_true(as.numeric(horizons_df$arima$lower_80[[1]]) < as.numeric(horizons_df$arima$upper_80[[1]]), "ARIMA interval ordered")
 
-# 9. Evaluation
 cat("\n-- Testing /api/evaluation --\n")
 ev <- get_json("/api/evaluation")
 scorecard_df <- as.data.frame(ev$scorecard)

@@ -1,4 +1,3 @@
-# CurLens - Plumber API
 #* @apiTitle CurLens API
 #* @apiDescription R backend API for CurLens currency analytics
 
@@ -9,11 +8,9 @@ source("R/rate_store.R")
 source("R/analytics.R")
 source("R/models.R")
 
-# In-memory cache for currencies to avoid external calls on every request
 CACHED_CURRENCIES <- NULL
 CACHED_CURRENCIES_TIME <- NULL
 
-# Helper for JSON error response
 send_error <- function(res, code, message, http_status = 400) {
   res$status <- http_status
   list(
@@ -23,7 +20,6 @@ send_error <- function(res, code, message, http_status = 400) {
   )
 }
 
-#* Enable CORS for local development
 #* @filter cors
 function(req, res) {
   res$setHeader("Access-Control-Allow-Origin", "*")
@@ -36,7 +32,6 @@ function(req, res) {
   plumber::forward()
 }
 
-#* Health check endpoint
 #* @get /api/health
 #* @serializer json list(auto_unbox=TRUE)
 function(res) {
@@ -69,7 +64,6 @@ function(res) {
   )
 }
 
-#* Supported currencies (curated subset verified against Frankfurter)
 #* @get /api/currencies
 #* @serializer json list(auto_unbox=TRUE)
 function(res) {
@@ -89,7 +83,6 @@ function(res) {
   }
   
   if (is.null(CACHED_CURRENCIES)) {
-    # Fallback to standard curated list if network failed
     curated <- data.frame(
       iso_code = CONFIG$curated_currencies,
       name = c("US Dollar", "Indian Rupee", "Euro", "British Pound", "Japanese Yen",
@@ -105,12 +98,10 @@ function(res) {
     ))
   }
   
-  # Filter against curated list
   available_codes <- CACHED_CURRENCIES$iso_code
   curated_codes <- intersect(CONFIG$curated_currencies, available_codes)
   filtered <- CACHED_CURRENCIES[CACHED_CURRENCIES$iso_code %in% curated_codes, ]
   
-  # Add symbols if missing
   symbols_map <- c(USD = "$", INR = "₹", EUR = "€", GBP = "£", JPY = "¥", 
                    AUD = "A$", CAD = "C$", CHF = "CHF", CNY = "¥", SGD = "S$", AED = "د.إ")
   if (!("symbol" %in% names(filtered))) {
@@ -124,7 +115,6 @@ function(res) {
   )
 }
 
-#* Latest published exchange rate
 #* @get /api/rates/latest
 #* @param base Base currency (default: USD)
 #* @param quote Quote currency (default: INR)
@@ -151,7 +141,6 @@ function(base = "USD", quote = "INR", refresh = FALSE, res) {
     ))
   }
   
-  # Primary pair USD/INR uses local store
   if (base == CONFIG$default_base && quote == CONFIG$default_quote) {
     do_refresh <- isTRUE(as.logical(refresh))
     store_res <- tryCatch({
@@ -186,7 +175,6 @@ function(base = "USD", quote = "INR", refresh = FALSE, res) {
     ))
   }
   
-  # For other pairs, query live API directly
   live_rate <- tryCatch({
     fetch_latest_rate(base, quote)
   }, error = function(e) {
@@ -208,7 +196,6 @@ function(base = "USD", quote = "INR", refresh = FALSE, res) {
   )
 }
 
-#* Historical exchange rates
 #* @get /api/rates/history
 #* @param base Base currency (default: USD)
 #* @param quote Quote currency (default: INR)
@@ -230,7 +217,6 @@ function(base = "USD", quote = "INR", from = NULL, to = NULL, res) {
     return(send_error(res, "INVALID_PARAMETER", "Invalid 'to' date format (must be YYYY-MM-DD)", 400))
   }
   
-  # Retrieve USD/INR history from local store
   if (base == CONFIG$default_base && quote == CONFIG$default_quote) {
     store_res <- tryCatch({
       get_rates_store(base, quote)
@@ -251,7 +237,6 @@ function(base = "USD", quote = "INR", from = NULL, to = NULL, res) {
       df <- df[df$date <= to, ]
     }
     
-    # Calculate enriched metrics for history (abs_change, pct_change, rolling_volatility)
     enriched <- compute_rate_series_metrics(df, vol_window = 30)
     
     return(list(
@@ -266,7 +251,6 @@ function(base = "USD", quote = "INR", from = NULL, to = NULL, res) {
     ))
   }
   
-  # Other pairs: fetch from live API
   start_dt <- if (!is.null(from) && nzchar(from)) from else CONFIG$default_start_date
   live_df <- tryCatch({
     fetch_historical_rates(base, quote, from_date = start_dt, to_date = to)
@@ -291,7 +275,6 @@ function(base = "USD", quote = "INR", from = NULL, to = NULL, res) {
   )
 }
 
-#* Currency conversion endpoint
 #* @get /api/convert
 #* @param amount Amount to convert
 #* @param from Source currency code
@@ -323,7 +306,6 @@ function(amount = 100, from = "USD", to = "INR", res) {
     ))
   }
   
-  # For USD to INR or INR to USD: check cache first
   pair_rate <- NULL
   rate_date <- NULL
   
@@ -343,7 +325,6 @@ function(amount = 100, from = "USD", to = "INR", res) {
     }
   }
   
-  # If not cached or another pair, fetch from Frankfurter
   if (is.null(pair_rate)) {
     live_info <- tryCatch({
       fetch_latest_rate(from, to)
@@ -371,7 +352,6 @@ function(amount = 100, from = "USD", to = "INR", res) {
   )
 }
 
-#* Analytics and summary metrics
 #* @get /api/analytics
 #* @param window Rolling volatility window (default: 30)
 #* @serializer json list(auto_unbox=TRUE)
@@ -394,7 +374,6 @@ function(window = 30, res) {
   summary_info
 }
 
-#* Nowcast: one-step-ahead estimate of the next unpublished reference rate
 #* @get /api/nowcast
 #* @serializer json list(auto_unbox=TRUE)
 function(res) {
@@ -408,7 +387,6 @@ function(res) {
   nowcast_data
 }
 
-#* Multi-horizon forecasts (1, 3, 5 observations)
 #* @get /api/forecast
 #* @param horizons Comma-separated list of integer observation horizons (e.g. 1,3,5)
 #* @serializer json list(auto_unbox=TRUE)
@@ -428,7 +406,6 @@ function(horizons = "1,3,5", res) {
   fc_data
 }
 
-#* Rolling-origin model evaluation scorecard
 #* @get /api/evaluation
 #* @param refresh Force recalculation of evaluation (default: false)
 #* @serializer json list(auto_unbox=TRUE)

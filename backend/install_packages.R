@@ -1,5 +1,3 @@
-# CurLens - Dependency Installer
-# Installs required R packages from CRAN binary repository
 
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 
@@ -28,7 +26,6 @@ install_if_missing <- function(pkgs) {
 
 install_if_missing(required_packages)
 
-# Verify all required packages can be loaded
 failed <- character(0)
 for (pkg in required_packages) {
   if (!requireNamespace(pkg, quietly = TRUE)) {

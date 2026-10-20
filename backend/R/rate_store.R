@@ -1,38 +1,31 @@
-# CurLens - Rate Store & Cache Manager
 suppressPackageStartupMessages({
   library(readr)
   library(dplyr)
 })
 
-# Ensure cache directory exists
 ensure_cache_dir <- function() {
   if (!dir.exists(CONFIG$cache_dir)) {
     dir.create(CONFIG$cache_dir, recursive = TRUE)
   }
 }
 
-# Atomically save data frame to CSV using temp file and rename
 save_cache_atomic <- function(df, cache_path) {
   ensure_cache_dir()
   tmp_file <- paste0(cache_path, ".tmp.", as.integer(Sys.time()))
   
-  # Format dates as YYYY-MM-DD
   df_to_save <- df
   df_to_save$date <- as.character(df_to_save$date)
   
   write.csv(df_to_save, file = tmp_file, row.names = FALSE)
   
-  # Atomic rename
   success <- file.rename(tmp_file, cache_path)
   if (!success) {
-    # Fallback to copy and remove
     file.copy(tmp_file, cache_path, overwrite = TRUE)
     unlink(tmp_file)
   }
   invisible(TRUE)
 }
 
-# Read cache if it exists and is non-empty
 load_cache <- function(cache_path) {
   if (!file.exists(cache_path)) {
     return(NULL)
@@ -61,9 +54,6 @@ load_cache <- function(cache_path) {
   })
 }
 
-# Sync / Refresh rates with Frankfurter v2 API
-# Uses overlap refresh and atomic cache write
-# Falls back to stale cache if network fails
 sync_rates_cache <- function(base = CONFIG$default_base, 
                              quote = CONFIG$default_quote, 
                              force_full = FALSE) {
@@ -72,7 +62,6 @@ sync_rates_cache <- function(base = CONFIG$default_base,
   
   now_utc <- format(as.POSIXlt(Sys.time(), tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ")
   
-  # Determine fetch start date
   fetch_from <- CONFIG$default_start_date
   if (!force_full && !is.null(cached_df) && nrow(cached_df) > 0) {
     max_date <- max(cached_df$date, na.rm = TRUE)
@@ -80,7 +69,6 @@ sync_rates_cache <- function(base = CONFIG$default_base,
     fetch_from <- format(overlap_date, "%Y-%m-%d")
   }
   
-  # Attempt network fetch
   fetch_res <- tryCatch({
     fresh_df <- fetch_historical_rates(base = base, quote = quote, from_date = fetch_from)
     list(success = TRUE, data = fresh_df, error = NULL)
@@ -92,18 +80,15 @@ sync_rates_cache <- function(base = CONFIG$default_base,
     new_data <- fetch_res$data
     
     if (!is.null(cached_df) && nrow(cached_df) > 0) {
-      # Merge: remove overlapping dates from cached_df, append new_data
       cached_filtered <- cached_df[!(cached_df$date %in% new_data$date), ]
       combined_df <- rbind(cached_filtered, new_data)
     } else {
       combined_df <- new_data
     }
     
-    # Sort and ensure uniqueness
     combined_df <- combined_df[order(combined_df$date), ]
     combined_df <- combined_df[!duplicated(combined_df$date), ]
     
-    # Validate before saving
     val <- validate_rates_df(combined_df)
     if (val$valid) {
       save_cache_atomic(combined_df, cache_path)
@@ -119,7 +104,6 @@ sync_rates_cache <- function(base = CONFIG$default_base,
     }
   }
   
-  # If fetch failed or returned invalid data, fall back to cache
   if (!is.null(cached_df) && nrow(cached_df) > 0) {
     return(list(
       data = cached_df,
@@ -132,12 +116,10 @@ sync_rates_cache <- function(base = CONFIG$default_base,
     ))
   }
   
-  # Both network and cache unavailable
   stop(paste("Data unavailable: failed to fetch from Frankfurter API and no local cache exists.", 
              ifelse(!is.null(fetch_res$error), paste("Error:", fetch_res$error), "")))
 }
 
-# Get rates: loads from cache if fresh, otherwise syncs
 get_rates_store <- function(base = CONFIG$default_base, 
                             quote = CONFIG$default_quote, 
                             force_refresh = FALSE) {

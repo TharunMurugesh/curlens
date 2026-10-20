@@ -1,4 +1,3 @@
-# CurLens - Phase 3 Analytics & Model Tests
 
 source("R/config.R")
 source("R/validation.R")
@@ -21,7 +20,6 @@ assert_true <- function(condition, desc) {
 
 cat("=== Starting Phase 3 Analytics & Metric Tests ===\n")
 
-# 1. Test MAE and RMSE with known mathematical test cases
 actual_known <- c(10.0, 12.0, 14.0)
 pred_known <- c(9.0, 12.0, 16.0)
 
@@ -31,15 +29,10 @@ rmse_val <- calculate_rmse(actual_known, pred_known)
 assert_true(abs(mae_val - 1.0) < 1e-6, sprintf("MAE calculated correctly on known case: expected 1.0, got %f", mae_val))
 assert_true(abs(rmse_val - sqrt(5/3)) < 1e-6, sprintf("RMSE calculated correctly on known case: expected %f, got %f", sqrt(5/3), rmse_val))
 
-# Directional accuracy test
 base_known <- c(9.5, 11.5, 14.5)
-# actual direction: 10 > 9.5 (+), 12 > 11.5 (+), 14 < 14.5 (-)
-# pred direction:   9 < 9.5 (-), 12 > 11.5 (+), 16 > 14.5 (+)
-# matches: 1 out of 3 = 33.33%
 dir_acc <- calculate_directional_accuracy(actual_known, pred_known, base_known)
 assert_true(abs(dir_acc - 100/3) < 0.1, "Directional accuracy calculated correctly on known case")
 
-# 2. Rate transformations and rolling volatility test
 sample_df <- data.frame(
   date = sprintf("2026-01-%02d", 1:35),
   base = rep("USD", 35),
@@ -61,7 +54,6 @@ assert_true(summary_res$latest_rate == metrics_df$rate[35], "Summary reports cor
 
 cat("\n=== Starting Phase 3 Modeling Tests ===\n")
 
-# 3. Random Walk Baseline
 rates_vec <- sample_df$rate
 rw_fc <- predict_random_walk(rates_vec, horizons = c(1, 3, 5))
 assert_true(length(rw_fc) == 3, "Random walk generated 3 horizons")
@@ -70,12 +62,10 @@ assert_true(rw_fc[["1"]]$lower_80 < rw_fc[["1"]]$prediction, "RW lower 80 interv
 assert_true(rw_fc[["1"]]$upper_80 > rw_fc[["1"]]$prediction, "RW upper 80 interval is above prediction")
 assert_true(rw_fc[["1"]]$lower_95 <= rw_fc[["1"]]$lower_80, "RW 95% interval encompasses 80% interval")
 
-# 4. ARIMA Fallback on Short Series
-short_rates <- rates_vec[1:10] # only 10 observations (< 30)
+short_rates <- rates_vec[1:10]
 short_arima <- predict_arima(short_rates, horizons = c(1, 3, 5))
 assert_true(short_arima[["1"]]$fallback_used == TRUE, "ARIMA safely falls back to baseline when history is short (<30)")
 
-# 5. ARIMA on Real Cached Data
 real_cache <- load_cache(CONFIG$cache_file)
 assert_true(!is.null(real_cache) && nrow(real_cache) >= 1000, "Loaded genuine cached USD/INR data")
 
@@ -87,14 +77,12 @@ assert_true(arima_fc[["1"]]$prediction > 0, "ARIMA h=1 prediction is positive")
 assert_true(arima_fc[["1"]]$lower_80 < arima_fc[["1"]]$upper_80, "ARIMA 80% bounds are strictly ordered")
 assert_true(arima_fc[["1"]]$lower_95 <= arima_fc[["1"]]$lower_80, "ARIMA 95% bounds encompass 80% bounds")
 
-# 6. Nowcast Generation
 nowcast_res <- generate_nowcast(real_cache)
 assert_true(nowcast_res$target_pair == "USD/INR", "Nowcast targets USD/INR")
 assert_true(nowcast_res$horizon_observations == 1, "Nowcast horizon is 1 observation")
 assert_true(nowcast_res$arima_estimate == arima_fc[["1"]]$prediction, "Nowcast shares horizon 1 ARIMA forecast")
 assert_true(grepl("statistical estimate", nowcast_res$disclaimer), "Nowcast includes honest statistical disclosure")
 
-# 7. Rolling-Origin Backtesting (approx 30 origins)
 cat("\nRunning Rolling-Origin Backtest on held-out test set (30 origins)...\n")
 t0 <- Sys.time()
 eval_res <- run_rolling_origin_evaluation(real_cache, num_origins = 30, test_size = 250, force_recompute = TRUE)
@@ -114,7 +102,6 @@ for (sc in eval_res$scorecard) {
               h, sc$random_walk$mae, sc$random_walk$rmse, sc$arima$mae, sc$arima$rmse, sc$arima_improvement_mae_pct))
 }
 
-# 8. Evaluation Cache Verification
 eval_cache_file <- file.path(CONFIG$cache_dir, "evaluation_usd_inr.rds")
 assert_true(file.exists(eval_cache_file), "Evaluation results cached to disk")
 t_cache0 <- Sys.time()

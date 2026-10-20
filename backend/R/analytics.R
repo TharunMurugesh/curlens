@@ -1,10 +1,8 @@
-# CurLens - Analytics Functions
 suppressPackageStartupMessages({
   library(dplyr)
   library(tibble)
 })
 
-# Calculate rate transformations: daily absolute change, percentage change, log returns, rolling volatility
 compute_rate_series_metrics <- function(rates_df, vol_window = 30) {
   if (is.null(rates_df) || nrow(rates_df) == 0) {
     return(data.frame())
@@ -16,15 +14,12 @@ compute_rate_series_metrics <- function(rates_df, vol_window = 30) {
   rates <- df$rate
   dates <- df$date
   
-  # Lagged rate
   lag_rate <- c(NA, rates[-n])
   
   abs_change <- rates - lag_rate
   pct_change <- (abs_change / lag_rate) * 100
   log_return <- c(NA, diff(log(rates)))
   
-  # Rolling volatility: sample standard deviation of log returns over vol_window
-  # Annualized volatility = sd(log_return) * sqrt(252) * 100
   rolling_vol <- rep(NA_real_, n)
   rolling_vol_ann <- rep(NA_real_, n)
   
@@ -52,7 +47,6 @@ compute_rate_series_metrics <- function(rates_df, vol_window = 30) {
   )
 }
 
-# Calculate summary metrics for dashboard and analytics endpoint
 calculate_summary_metrics <- function(rates_df, vol_window = 30) {
   if (is.null(rates_df) || nrow(rates_df) == 0) {
     return(list(error = "Empty series"))
@@ -86,7 +80,6 @@ calculate_summary_metrics <- function(rates_df, vol_window = 30) {
   )
 }
 
-# Evaluation error metrics calculation
 calculate_mae <- function(actual, predicted) {
   valid <- !is.na(actual) & !is.na(predicted)
   if (sum(valid) == 0) return(NA_real_)
@@ -104,7 +97,6 @@ calculate_directional_accuracy <- function(actual, predicted, baseline_actual) {
   if (sum(valid) == 0) return(NA_real_)
   actual_dir <- sign(actual[valid] - baseline_actual[valid])
   pred_dir <- sign(predicted[valid] - baseline_actual[valid])
-  # Count matches where direction is non-zero
   mean(actual_dir == pred_dir) * 100
 }
 

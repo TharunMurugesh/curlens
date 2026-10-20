@@ -1,12 +1,8 @@
-# CurLens - Time Series Models & Rolling-Origin Backtesting
 suppressPackageStartupMessages({
   library(forecast)
   library(dplyr)
 })
 
-# 1. Random Walk Baseline Model
-# Forecasts next observations as equal to the latest observed rate
-# Prediction intervals based on log-return volatility
 predict_random_walk <- function(rates, horizons = c(1, 3, 5)) {
   n <- length(rates)
   if (n == 0) stop("Rates vector is empty")
@@ -18,7 +14,6 @@ predict_random_walk <- function(rates, horizons = c(1, 3, 5)) {
   
   res <- list()
   for (h in horizons) {
-    # On log scale: se = sigma * sqrt(h)
     se <- sigma * sqrt(h)
     log_pt <- log(latest_rate)
     
@@ -36,12 +31,9 @@ predict_random_walk <- function(rates, horizons = c(1, 3, 5)) {
   res
 }
 
-# 2. ARIMA Model on log exchange rates
-# Uses auto.arima on log(rates), then exponentiates point forecasts and intervals
 predict_arima <- function(rates, horizons = c(1, 3, 5)) {
   n <- length(rates)
   if (n < 30) {
-    # History too short, fall back to random walk
     rw <- predict_random_walk(rates, horizons)
     for (k in names(rw)) {
       rw[[k]]$model <- "arima (fallback to random_walk)"
@@ -67,7 +59,6 @@ predict_arima <- function(rates, horizons = c(1, 3, 5)) {
   })
   
   if (is.null(fit)) {
-    # Fitting failed, fall back safely
     rw <- predict_random_walk(rates, horizons)
     for (k in names(rw)) {
       rw[[k]]$model <- "arima (fallback to random_walk)"
@@ -120,8 +111,6 @@ predict_arima <- function(rates, horizons = c(1, 3, 5)) {
   res
 }
 
-# 3. Nowcast (One-step-ahead estimate)
-# Produced from data through current date; shares the 1-observation ARIMA forecast
 generate_nowcast <- function(rates_df) {
   if (is.null(rates_df) || nrow(rates_df) == 0) {
     stop("No rate data available for nowcasting")
@@ -135,7 +124,6 @@ generate_nowcast <- function(rates_df) {
   latest_observation_date <- dates[n]
   now_utc <- format(as.POSIXlt(Sys.time(), tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ")
   
-  # Forecast 1 observation ahead
   arima_h1 <- predict_arima(rates, horizons = 1)[[1]]
   rw_h1 <- predict_random_walk(rates, horizons = 1)[[1]]
   
@@ -160,7 +148,6 @@ generate_nowcast <- function(rates_df) {
   )
 }
 
-# 4. Multi-Horizon Forecast Endpoint Generator
 generate_forecast_response <- function(rates_df, horizons = c(1, 3, 5)) {
   if (is.null(rates_df) || nrow(rates_df) == 0) {
     stop("No rate data available for forecasting")
@@ -201,8 +188,6 @@ generate_forecast_response <- function(rates_df, horizons = c(1, 3, 5)) {
   )
 }
 
-# 5. Chronological Rolling-Origin Backtesting & Evaluation
-# Held-out testing on the latest ~250 observations with 30 evaluation origins
 run_rolling_origin_evaluation <- function(rates_df, num_origins = 30, test_size = 250, horizons = c(1, 3, 5), force_recompute = FALSE) {
   cache_file <- file.path(CONFIG$cache_dir, "evaluation_usd_inr.rds")
   
@@ -213,7 +198,6 @@ run_rolling_origin_evaluation <- function(rates_df, num_origins = 30, test_size 
   
   max_date <- max(rates_df$date)
   
-  # Check if cached evaluation is available for current latest date
   if (!force_recompute && file.exists(cache_file)) {
     cached_eval <- tryCatch(readRDS(cache_file), error = function(e) NULL)
     if (!is.null(cached_eval) && 
@@ -227,7 +211,6 @@ run_rolling_origin_evaluation <- function(rates_df, num_origins = 30, test_size 
   rates <- rates_df$rate
   dates <- rates_df$date
   
-  # Held-out test window: start at origin_start_idx up to n - max(horizons)
   max_h <- max(horizons)
   origin_start_idx <- n - test_size
   origin_end_idx <- n - max_h
@@ -241,7 +224,6 @@ run_rolling_origin_evaluation <- function(rates_df, num_origins = 30, test_size 
   origins <- seq(origin_start_idx, origin_end_idx, by = stride)
   origins <- origins[1:min(length(origins), num_origins)]
   
-  # Tracking evaluation results: list of results per horizon
   results_rw <- list()
   results_arima <- list()
   for (h in horizons) {
@@ -249,12 +231,10 @@ run_rolling_origin_evaluation <- function(rates_df, num_origins = 30, test_size 
     results_arima[[as.character(h)]] <- list(actual = numeric(), pred = numeric(), base_actual = numeric())
   }
   
-  # Chronological loop (NO data leakage: fit only on 1:t)
   for (orig in origins) {
     train_rates <- rates[1:orig]
     origin_rate <- rates[orig]
     
-    # Fit ARIMA on train_rates only
     rw_pred <- predict_random_walk(train_rates, horizons)
     ar_pred <- predict_arima(train_rates, horizons)
     
@@ -264,12 +244,10 @@ run_rolling_origin_evaluation <- function(rates_df, num_origins = 30, test_size 
         actual_val <- rates[target_idx]
         h_str <- as.character(h)
         
-        # RW
         results_rw[[h_str]]$actual <- c(results_rw[[h_str]]$actual, actual_val)
         results_rw[[h_str]]$pred <- c(results_rw[[h_str]]$pred, rw_pred[[h_str]]$prediction)
         results_rw[[h_str]]$base_actual <- c(results_rw[[h_str]]$base_actual, origin_rate)
         
-        # ARIMA
         results_arima[[h_str]]$actual <- c(results_arima[[h_str]]$actual, actual_val)
         results_arima[[h_str]]$pred <- c(results_arima[[h_str]]$pred, ar_pred[[h_str]]$prediction)
         results_arima[[h_str]]$base_actual <- c(results_arima[[h_str]]$base_actual, origin_rate)
@@ -277,7 +255,6 @@ run_rolling_origin_evaluation <- function(rates_df, num_origins = 30, test_size 
     }
   }
   
-  # Compute metrics for each model and horizon
   scorecard <- list()
   for (h in horizons) {
     h_str <- as.character(h)
@@ -326,7 +303,6 @@ run_rolling_origin_evaluation <- function(rates_df, num_origins = 30, test_size 
     notes = "Origins are evaluated strictly sequentially. At each origin t, model fits solely on prior observations (1:t) to predict t+h."
   )
   
-  # Cache the evaluation result
   tryCatch({
     saveRDS(eval_result, file = cache_file)
   }, error = function(e) {

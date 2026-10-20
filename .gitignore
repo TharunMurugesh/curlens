@@ -1,27 +1,21 @@
-# Dependencies
 node_modules/
 .pnpm-store/
 
-# Build artifacts
 frontend/dist/
 .vite/
 
-# Data cache (keep directory structure with .gitkeep)
 backend/data/cache/*.csv
 backend/data/cache/*.rds
 !backend/data/cache/.gitkeep
 
-# R artifacts
 .Rhistory
 .RData
 .Rproj.user/
 
-# Logs & temp
 *.log
 scratch/
 tmp/
 
-# OS files
 .DS_Store
 Thumbs.db
 

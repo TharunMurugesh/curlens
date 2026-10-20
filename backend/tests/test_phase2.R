@@ -1,4 +1,3 @@
-# CurLens - Phase 2 Ingestion & Cache Tests
 
 source("R/config.R")
 source("R/validation.R")
@@ -20,7 +19,6 @@ assert_true <- function(condition, desc) {
 
 cat("=== Starting Phase 2 Deterministic / Fixture Tests ===\n")
 
-# 1. Validation tests
 valid_df <- data.frame(
   date = c("2026-10-15", "2026-10-16", "2026-10-17"),
   base = c("USD", "USD", "USD"),
@@ -32,7 +30,6 @@ valid_df <- data.frame(
 v_res <- validate_rates_df(valid_df)
 assert_true(v_res$valid, "Valid rates dataframe passes validation")
 
-# Invalid rates: negative or zero
 invalid_rate_df <- valid_df
 invalid_rate_df$rate[2] <- -1.0
 assert_true(!validate_rates_df(invalid_rate_df)$valid, "Negative rate rejected")
@@ -41,12 +38,10 @@ invalid_zero_df <- valid_df
 invalid_zero_df$rate[2] <- 0
 assert_true(!validate_rates_df(invalid_zero_df)$valid, "Zero rate rejected")
 
-# Invalid dates: duplicates
 dup_date_df <- valid_df
 dup_date_df$date[3] <- "2026-10-16"
 assert_true(!validate_rates_df(dup_date_df)$valid, "Duplicate dates rejected")
 
-# 2. Atomic cache save and load
 test_cache_path <- file.path(CONFIG$cache_dir, "test_pair.csv")
 if (file.exists(test_cache_path)) unlink(test_cache_path)
 
@@ -57,17 +52,15 @@ loaded_df <- load_cache(test_cache_path)
 assert_true(!is.null(loaded_df) && nrow(loaded_df) == 3, "Loaded cache matches expected row count")
 assert_true(all(loaded_df$rate == valid_df$rate), "Loaded cache values match saved values")
 
-# 3. Deduplication and Overlap Merge
 new_overlap_df <- data.frame(
   date = c("2026-10-17", "2026-10-18"),
   base = c("USD", "USD"),
   quote = c("INR", "INR"),
-  rate = c(95.15, 95.30), # updated rate for 10-17
+  rate = c(95.15, 95.30),
   fetched_at = rep("2026-10-19T01:00:00Z", 2),
   stringsAsFactors = FALSE
 )
 
-# Simulate merge
 cached_filtered <- loaded_df[!(loaded_df$date %in% new_overlap_df$date), ]
 merged_df <- rbind(cached_filtered, new_overlap_df)
 merged_df <- merged_df[order(merged_df$date), ]
@@ -75,21 +68,17 @@ assert_true(nrow(merged_df) == 4, "Merged dataframe has 4 unique dates")
 assert_true(merged_df$rate[merged_df$date == "2026-10-17"] == 95.15, "Merge retains updated rate on overlap")
 assert_true(anyDuplicated(merged_df$date) == 0, "No duplicate dates after merge")
 
-# Cleanup test cache
 if (file.exists(test_cache_path)) unlink(test_cache_path)
 
-# 4. Fallback when network fails but valid cache exists
 test_stale_cache <- file.path(CONFIG$cache_dir, "test_stale.csv")
 save_cache_atomic(valid_df, test_stale_cache)
 
-# Mocked fallback test:
 cached_res <- load_cache(test_stale_cache)
 assert_true(!is.null(cached_res), "Stale cache remains readable")
 if (file.exists(test_stale_cache)) unlink(test_stale_cache)
 
 cat("\n=== Starting Phase 2 Network / Live Ingestion Tests ===\n")
 
-# 5. Live Currencies
 live_curr <- tryCatch({
   fetch_currencies()
 }, error = function(e) {
@@ -104,7 +93,6 @@ if (!is.null(live_curr)) {
   assert_true("USD" %in% live_curr$iso_code, "USD present in supported currencies")
 }
 
-# 6. Live USD/INR Latest Rate
 live_latest <- tryCatch({
   fetch_latest_rate("USD", "INR")
 }, error = function(e) {
@@ -118,7 +106,6 @@ if (!is.null(live_latest)) {
   assert_true(validate_date_string(live_latest$date), "Live rate date is valid ISO date")
 }
 
-# 7. Live History Sync & Local Cache
 live_sync <- tryCatch({
   sync_rates_cache("USD", "INR", force_full = FALSE)
 }, error = function(e) {

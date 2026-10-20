@@ -1,4 +1,3 @@
-# CurLens - Configuration and Constants
 
 CONFIG <- list(
   api_base_url = "https://api.frankfurter.dev/v2",
@@ -12,7 +11,6 @@ CONFIG <- list(
   curated_currencies = c("USD", "INR", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "SGD", "AED")
 )
 
-# Helper to resolve paths relative to backend root
 get_cache_path <- function(base = CONFIG$default_base, quote = CONFIG$default_quote) {
   filename <- paste0(tolower(base), "_", tolower(quote), ".csv")
   file.path(CONFIG$cache_dir, filename)

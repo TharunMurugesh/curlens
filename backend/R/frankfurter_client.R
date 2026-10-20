@@ -1,10 +1,8 @@
-# CurLens - Frankfurter v2 API Client
 suppressPackageStartupMessages({
   library(httr2)
   library(jsonlite)
 })
 
-# Create base request with headers and timeout
 frankfurter_req <- function(endpoint) {
   url <- paste0(CONFIG$api_base_url, endpoint)
   request(url) |>
@@ -12,7 +10,6 @@ frankfurter_req <- function(endpoint) {
     req_timeout(CONFIG$request_timeout_seconds)
 }
 
-# Fetch list of supported currencies
 fetch_currencies <- function() {
   req <- frankfurter_req("/currencies")
   resp <- tryCatch({
@@ -30,11 +27,9 @@ fetch_currencies <- function() {
     return(body)
   }
   
-  # If list of objects
   as.data.frame(body, stringsAsFactors = FALSE)
 }
 
-# Fetch single latest rate for a pair
 fetch_latest_rate <- function(base = CONFIG$default_base, quote = CONFIG$default_quote) {
   base <- toupper(trimws(base))
   quote <- toupper(trimws(quote))
@@ -75,7 +70,6 @@ fetch_latest_rate <- function(base = CONFIG$default_base, quote = CONFIG$default
   )
 }
 
-# Fetch historical time series for a pair
 fetch_historical_rates <- function(base = CONFIG$default_base, 
                                    quote = CONFIG$default_quote, 
                                    from_date = CONFIG$default_start_date, 
@@ -120,7 +114,6 @@ fetch_historical_rates <- function(base = CONFIG$default_base,
   df$rate <- as.numeric(df$rate)
   df$fetched_at <- now_utc
   
-  # Filter valid rows
   df <- df[!is.na(df$rate) & !is.infinite(df$rate) & df$rate > 0 & !is.na(df$date), ]
   df <- df[order(df$date), ]
   df <- df[!duplicated(df$date), ]
