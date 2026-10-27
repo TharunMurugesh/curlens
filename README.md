@@ -78,6 +78,12 @@ Open [http://localhost:5173](http://localhost:5173). The Vite development server
 
 To create a production frontend bundle, run `npm run build` from `frontend`.
 
+## GitHub Pages deployment
+
+The `main` branch workflow builds and deploys the frontend to GitHub Pages. In the repository settings, set **Pages → Build and deployment → Source** to **GitHub Actions**. The project site URL is `https://tharunmurugesh.github.io/curlens/`.
+
+GitHub Pages serves static files and does not run the R/Plumber API. To enable live rate data and forecasts on the published site, deploy the backend to an HTTPS host and add a repository Actions variable named `VITE_API_BASE_URL` containing the backend's base URL (without a trailing slash). Without that API deployment, the frontend can load but data-dependent views will show the API connection error.
+
 ## API
 
 | Endpoint | Description |
