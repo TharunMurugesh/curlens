@@ -107,3 +107,7 @@ The backend stores downloaded USD/INR observations in `backend/data/cache/usd_in
 ## Limitations
 
 CurLens is intended for educational and analytical use. It does not provide real-time prices, transaction quotes, financial advice, or guaranteed forecasts. Upstream data availability, local cache contents, model fit, and network connectivity affect which figures are available in the application.
+
+## License
+
+CurLens source code is licensed under the [MIT License](LICENSE). Third-party dependencies retain their own licenses.
