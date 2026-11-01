@@ -373,6 +373,146 @@ body {
   font-family: var(--font-mono);
 }
 
+.chart-studio {
+  margin-bottom: 1.5rem;
+}
+
+.chart-studio-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-studio-title {
+  font-size: 1.125rem;
+  color: var(--text-primary);
+}
+
+.chart-studio-description {
+  max-width: 680px;
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.chart-studio-actions,
+.studio-chart-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.chart-control {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.chart-control select {
+  min-height: 34px;
+  padding: 0.35rem 1.75rem 0.35rem 0.55rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.add-chart-btn {
+  min-height: 36px;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--accent-blue);
+  border-radius: var(--radius-sm);
+  background: var(--accent-blue);
+  color: white;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.add-chart-btn:hover {
+  background: var(--accent-blue-hover);
+}
+
+.chart-studio-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.studio-chart-card {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+}
+
+.studio-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.studio-chart-header h4 {
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+}
+
+.studio-chart-header span {
+  display: block;
+  margin-top: 0.125rem;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+}
+
+.remove-chart-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.remove-chart-btn:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.studio-chart-controls {
+  margin-top: 0.75rem;
+}
+
+.studio-chart-plot {
+  width: 100%;
+  height: 260px;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 720px) {
+  .chart-studio-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .chart-studio-actions {
+    justify-content: space-between;
+  }
+
+  .chart-studio-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .range-selector {
   display: flex;
   gap: 0.25rem;

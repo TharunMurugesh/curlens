@@ -1,17 +1,7 @@
-import React, { useState } from 'react';
-import RateChart from '../components/RateChart';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from 'recharts';
+import React from 'react';
+import ChartStudio from '../components/ChartStudio';
 
 export default function HistoryPage({ historyRates = [], analytics }) {
-  const [activeView, setActiveView] = useState('rate');
   const safeRates = Array.isArray(historyRates) ? historyRates : [];
   const recentRates = safeRates.slice(-20).reverse();
 
@@ -25,77 +15,10 @@ export default function HistoryPage({ historyRates = [], analytics }) {
               Daily published reference rates{analytics?.start_date && analytics?.end_date ? ` from ${analytics.start_date} to ${analytics.end_date}` : ' across the available observation period'}.
             </p>
           </div>
-          <div className="view-toggle">
-            <button
-              className={`toggle-btn ${activeView === 'rate' ? 'active' : ''}`}
-              onClick={() => setActiveView('rate')}
-            >
-              Exchange Rate
-            </button>
-            <button
-              className={`toggle-btn ${activeView === 'volatility' ? 'active' : ''}`}
-              onClick={() => setActiveView('volatility')}
-            >
-              Rolling Volatility
-            </button>
-          </div>
         </div>
       </div>
 
-      {activeView === 'rate' ? (
-        <RateChart rates={safeRates} title="USD/INR Exchange Rate Series (Levels)" height={380} />
-      ) : (
-        <div className="chart-card">
-          <div className="chart-header">
-            <div>
-              <h3 className="chart-title">30-Observation Rolling Volatility (Annualized %)</h3>
-              <span className="chart-subtitle">
-                Formula: Sample standard deviation of daily log returns over rolling 30 business sessions × √252 × 100
-              </span>
-            </div>
-          </div>
-          <div style={{ width: '100%', height: 380 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={safeRates.slice(-365)} margin={{ top: 10, right: 15, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="date"
-                  tickLine={false}
-                  axisLine={{ stroke: '#cbd5e1' }}
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                  minTickGap={40}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={{ stroke: '#cbd5e1' }}
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                  tickFormatter={(v) => `${v}%`}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload || !payload.length) return null;
-                    const d = payload[0].payload;
-                    return (
-                      <div className="chart-tooltip">
-                        <div className="tooltip-date">{d.date}</div>
-                        <div className="tooltip-rate">Annualized Vol: {d.annualized_volatility != null ? `${d.annualized_volatility}%` : '—'}</div>
-                        <div className="tooltip-change">Std Dev: {d.rolling_volatility != null ? d.rolling_volatility : '—'}</div>
-                      </div>
-                    );
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="annualized_volatility"
-                  stroke="#d97706"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+      <ChartStudio rates={safeRates} />
 
       <div className="summary-stats-grid">
         <div className="stat-card">
